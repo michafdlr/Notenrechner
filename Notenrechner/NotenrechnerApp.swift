@@ -5,6 +5,7 @@
 //  Created by Michael Fiedler on 20.06.25.
 //
 
+import SwiftData
 import SwiftUI
 
 @main
@@ -13,5 +14,6 @@ struct NotenrechnerApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(SampleData.shared.modelContainer)
     }
 }
