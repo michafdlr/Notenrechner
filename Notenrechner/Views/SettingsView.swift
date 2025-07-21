@@ -9,7 +9,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @AppStorage("name") private var name = ""
-    @AppStorage("klassenstufe") private var klassenstufe = 5
+    @AppStorage("klassenstufe") private var klassenstufe = 12
     
     @Environment(\.dismiss) var dismiss
     
@@ -29,9 +29,25 @@ struct SettingsView: View {
                     }
                 }
                 
-                Button("Speichern", systemImage: "square.and.arrow.down.fill") {
-                    dismiss()
+                HStack{
+                    Spacer()
+                    
+                    Button {
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Image(systemName: "square.and.arrow.down")
+                            Text("Speichern")
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 20)
+                        .background(Capsule())
+                    }
+                    
+                    Spacer()
                 }
+                .listRowBackground(Color.clear)
             }
             .navigationTitle("Persönliches")
         }

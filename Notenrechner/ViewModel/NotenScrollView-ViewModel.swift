@@ -5,16 +5,16 @@
 //  Created by Michael Fiedler on 26.06.25.
 //
 
-import Foundation
+import SwiftUI
 
 extension NotenScrollView {
     
     @Observable
     class ViewModel {
-        var grades = [Int]()
         var klassenstufe: Int? = nil
         var averageVisible = false
         var precision = -2
+        var selectedKlausur: Klausur? = nil
         
         var notenRange: ClosedRange<Int> {
             guard let klassenstufe else {return 0...15}
@@ -24,7 +24,7 @@ extension NotenScrollView {
             return 0...15
         }
         
-        var average: Decimal {
+        func getAverage(_ grades: [Int]) -> Decimal {
             grades.average(precision: precision)
         }
     }

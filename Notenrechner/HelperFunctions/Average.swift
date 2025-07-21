@@ -9,6 +9,7 @@ import Foundation
 
 extension Array where Element == Int {
     func average(precision: Int? = nil) -> Decimal {
+        if self.isEmpty {return 0.0}
         if let precision {
             return (self.reduce(0.0) {$0 + Double($1)}/Double(self.count)).roundTo(places: precision)
         }

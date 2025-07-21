@@ -10,10 +10,20 @@ import SwiftUI
 
 @main
 struct NotenrechnerApp: App {
+    let container: ModelContainer
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(modelContext: container.mainContext)
         }
-        .modelContainer(SampleData.shared.modelContainer)
+        .modelContainer(container)
+    }
+    
+    init() {
+        do {
+            container = try ModelContainer(for: Fach.self, Klausur.self)
+        } catch {
+            fatalError("Failed to create model Container")
+        }
     }
 }

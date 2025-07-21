@@ -10,7 +10,8 @@ import SwiftUI
 struct NotenScrollView: View {
     @AppStorage("klassenstufe") private var klassenstufe = 12
     
-    var grades: [Int]
+    @Bindable var fach: Fach
+    var showWritten = false
     var title: String
     var label: String
     @State private var viewModel = ViewModel()
@@ -22,34 +23,84 @@ struct NotenScrollView: View {
                     Text(title)
                         .font(.title3.bold())
 
-                    ForEach(0..<viewModel.grades.count, id: \.self) {
-                        index in
-                        Picker(selection: $viewModel.grades[index]) {
-                            ForEach(viewModel.notenRange, id: \.self) {
-                                Text(
-                                    viewModel.notenRange.upperBound == 15
-                                        && $0 < 10 ? "0\($0)" : String($0)
+                    Group{
+                        if showWritten {
+                            ForEach(fach.writtenKlausuren) { klausur in
+                                let note = klausur.grade
+                                Button {
+                                    viewModel.selectedKlausur = klausur
+                                } label: {
+                                    Text(
+                                        viewModel.notenRange.upperBound == 15 && note < 10
+                                        ? "0\(note)" : String(note)
+                                    )
+                                    .padding(5)
+                                    .frame(width: 40, height: 35)
+                                }
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(.accent, lineWidth: 2.0)
+                                        .overlay(
+                                            Button {
+                                                if let index = fach.writtenKlausuren.firstIndex(where: { $0.id == klausur.id }) {
+                                                    fach.writtenKlausuren.remove(at: index)
+                                                }
+                                            } label: {
+                                                Image(systemName: "minus.circle.fill")
+                                            }
+                                            .offset(x: 10, y: -10),
+                                            alignment: .topTrailing
+                                        )
                                 )
-                                .monospaced()
+                                .padding(10)
+                                .sheet(item: $viewModel.selectedKlausur) {
+                                    KlausurDetailView(klausur: $0)
+                                }
                             }
-                        } label: {
-                            Text("\(label) \(index+1)")
-                            Text("Note \(viewModel.grades[index])")
+                                Button {
+                                    fach.writtenKlausuren.append(Klausur(grade: viewModel.notenRange.upperBound == 15 ? 10 : 2))
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                }
+                                .buttonStyle(.plain)
+                        } else {
+                            ForEach($fach.oralGrades) { $grade in
+                                Picker(selection: $grade.value) {
+                                    ForEach(viewModel.notenRange, id: \.self) { note in
+                                        Text(viewModel.notenRange.upperBound == 15 && note < 10 ? "0\(note)" : "\(note)")
+                                            .tag(note)
+                                    }
+                                } label: {
+                                    Text("Note")
+                                }
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(.accent, lineWidth: 2.0)
+                                        .overlay(
+                                            Button {
+                                                if let index = fach.oralGrades.firstIndex(where: { $0.id == grade.id }) {
+                                                    fach.oralGrades.remove(at: index)
+                                                }
+                                            } label: {
+                                                Image(systemName: "minus.circle.fill")
+                                            }
+                                            .offset(x: 10, y: -10),
+                                            alignment: .topTrailing
+                                        )
+                                )
+                                .padding(10)
+                            }
+                            
+                            Button {
+                                fach.oralGrades.append(viewModel.notenRange.upperBound == 15 ? OralGrade(value: 10) : OralGrade(value: 2))
+                            } label: {
+                                Image(systemName: "plus.circle.fill")
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 5)
-                                .stroke(.accent, lineWidth: 2.0)
-                        )
-                        .padding(.vertical, 5)
                     }
 
-                    Button {
-
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                    }
-
-                    Text("ø \(viewModel.average)")
+                    Text("ø \(showWritten ? viewModel.getAverage(fach.writtenKlausuren.map { $0.grade }) : viewModel.getAverage(fach.oralGrades.map {$0.value}), format: .number.precision(.fractionLength(-viewModel.precision)))")
                         .font(.title3.bold())
                         .onScrollVisibilityChange(threshold: 0.9) { bool in
                             withAnimation(.spring(duration: 0.5)) {
@@ -64,7 +115,7 @@ struct NotenScrollView: View {
                     Spacer()
                     Image(systemName: "arrowshape.forward.fill")
                         .font(.title3.bold())
-                        .foregroundStyle(.primary.opacity(0.8))
+                        .foregroundStyle(.white.opacity(0.7))
                         .shadow(color: .secondary, radius: 3)
                         .padding(10)
                         .background(
@@ -79,11 +130,7 @@ struct NotenScrollView: View {
         .scrollBounceBehavior(.basedOnSize)
         .scrollIndicators(.hidden)
         .onAppear {
-            viewModel.grades = grades
             viewModel.klassenstufe = klassenstufe
-        }
-        .onChange(of: grades) { _, newValue in
-            viewModel.grades = grades
         }
         .onChange(of: klassenstufe) { _, newValue in
             viewModel.klassenstufe = newValue
@@ -91,6 +138,6 @@ struct NotenScrollView: View {
     }
 }
 
-#Preview {
-    NotenScrollView(grades: [12, 14, 12], title: "Mündliche Noten: ", label: "Ändere mündliche Note")
-}
+//#Preview {
+//    NotenScrollView(grades: .constant([12, 14, 12]), klausuren: [], title: "Mündliche Noten: ", label: "Ändere mündliche Note")
+//}

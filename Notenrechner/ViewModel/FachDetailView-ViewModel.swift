@@ -17,6 +17,7 @@ extension FachDetailView {
         var precision = -2
         
         var settingsViewShowing = false
+        var deleteAlertShowing = false
         
         
         var notenRange: ClosedRange<Int> {
@@ -31,9 +32,8 @@ extension FachDetailView {
             fach.writtenKlausuren.map { $0.grade }
         }
         
-        var oralAverage: Decimal {
-            fach.oralGrades.average(precision: precision)
-        }
+        var oralAverage: Decimal = 0
+        
         var writtenAverage: Decimal {
             var grades = [Int]()
             fach.writtenKlausuren.forEach { klausur in
@@ -42,11 +42,17 @@ extension FachDetailView {
             return grades.average(precision: precision)
         }
         var overallAverage: Decimal {
-            Notenrechner.overallAverage(oralAverage: oralAverage, writtenAverage: writtenAverage, oralWeight: Decimal(fach.weighting), precision: precision)
+            Notenrechner.overallAverage(oralAverage: oralAverage, writtenAverage: writtenAverage, oralWeight: Decimal(fach.weighting.value), precision: precision)
         }
         
         func updateFach(_ fach: Fach) {
             self.fach = fach
+            updateOralAverage()
+        }
+        
+        func updateOralAverage() {
+            let oralGrades = fach.oralGrades.map { $0.value }
+            oralAverage = oralGrades.average(precision: precision)
         }
     }
 }

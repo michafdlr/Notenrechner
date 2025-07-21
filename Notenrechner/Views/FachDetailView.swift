@@ -8,42 +8,71 @@
 import SwiftUI
 
 struct FachDetailView: View {
-    var fach: Fach
+    @Environment(\.modelContext) var modelContext
+    @Bindable var fach: Fach
     @AppStorage("klassenstufe") private var klassenstufe = 12
     
     @State private var viewModel = ViewModel()
+    
+    var deleteAction: (() -> Void)
     
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    Text("Gesamt: \(viewModel.overallAverage)")
-                    Text("Mündlich: \(viewModel.oralAverage)")
-                    Text("Schriftlich: \(viewModel.writtenAverage)")
+                    DurchschnittView(title: "Gesamt: ", average: viewModel.overallAverage, precision: -viewModel.precision)
+                    DurchschnittView(title: "Mündlich: ", average: viewModel.oralAverage, precision: -viewModel.precision)
+                    DurchschnittView(title: "Schriftlich: ", average: viewModel.writtenAverage, precision: -viewModel.precision)
                     
                 } header: {
                     Text("Durchschnitte")
-                        .font(.title3.bold())
                 }
                 
                 
                 Section{
                     HStack {
+                        Text("Fach:")
+                            .font(.title3.bold())
+                        
+                        CustomTextField(
+                            value: $fach.name,
+                            placeholder: "Mathematik"
+                        )
+                    }
+                    
+                    HStack {
                         Text("Lehrer:")
                             .font(.title3.bold())
                         
                         CustomTextField(
-                            value: $viewModel.fach.teacher,
+                            value: $fach.teacher,
                             placeholder: "Frau Musterfrau"
                         )
                     }
                     
-                    NotenScrollView(grades: viewModel.fach.oralGrades, title: "Mündliche Noten: ", label: "Ändere mündliche Note")
-                    
-                    NotenScrollView(grades: viewModel.writtenGrades, title: "Schriftliche Noten: ", label: "Ändere schriftliche Note")
+                    NotenScrollView(fach: fach, showWritten: false, title: "Mündliche Noten: ", label: "Ändere mündliche Note")
+
+                    NotenScrollView(fach: fach, showWritten: true, title: "Schriftliche Noten: ", label: "Ändere schriftliche Note")
                 } header: {
                     Text("Details")
-                        .font(.title3.bold())
+//                        .font(.title3.bold())
+                }
+                
+                Section {
+                    HStack{
+                        Text("Mündlich: ")
+                            .font(.title3.bold())
+                        CustomTextField(value: $fach.weighting, placeholder: "Prozentangabe")
+                            .keyboardType(.decimalPad)
+                    }
+                    
+                    HStack{
+                        Text("Schriftlich: ")
+                            .font(.title3.bold())
+                        Text("\((PercentDouble(1) - fach.weighting).stringValue)")
+                    }
+                } header: {
+                    Text("Gewichtung")
                 }
                 
             }
@@ -51,13 +80,16 @@ struct FachDetailView: View {
                 viewModel.updateFach(fach)
                 viewModel.klassenstufe = klassenstufe
             }
-            .onChange(of: fach) { oldValue, newValue in
+            .onChange(of: fach) { _, newValue in
                 viewModel.updateFach(newValue)
             }
             .onChange(of: klassenstufe) { _, newValue in
                 viewModel.klassenstufe = newValue
             }
-            .navigationTitle(viewModel.fach.name)
+            .onChange(of: fach.oralGrades) {
+                viewModel.updateOralAverage()
+            }
+            .navigationTitle(fach.name)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -66,15 +98,35 @@ struct FachDetailView: View {
                         Image(systemName: "gearshape")
                     }
                 }
+                
+                ToolbarItem(placement: .destructiveAction) {
+                    Button{
+                        viewModel.deleteAlertShowing = true
+                    } label: {
+                        Image(systemName: "trash.circle")
+                            .foregroundStyle(.red)
+                    }
+                }
             }
             .scrollBounceBehavior(.basedOnSize)
             .sheet(isPresented: $viewModel.settingsViewShowing) {
                 SettingsView()
             }
+            .alert("Fach löschen?", isPresented: $viewModel.deleteAlertShowing) {
+                Button("Löschen", role: .destructive) {
+                    modelContext.delete(fach)
+                    deleteAction()
+                }
+                
+                Button("Abbrechen", role: .cancel){}
+            } message: {
+                Text("Wenn du das Fach löschst, werden alle Noten und Klausuren gelöscht.")
+            }
+
         }
     }
 }
 
 #Preview {
-    FachDetailView(fach: Fach.sampleData.first!)
+    FachDetailView(fach: Fach.sampleData.first!) {}
 }
